@@ -14,33 +14,57 @@ Running Docker containers is easy. Exposing them securely with HTTPS is not. Thi
 ## Architecture
 
 ```
-Browser → Caddy (80/443, auto-HTTPS) → service-a:5000
-                                     → service-b:8080
-                                     → service-c:3000
+Browser → Caddy (80/443, auto-HTTPS) → vitaminchecker:5000  (/vitaminchecker/)
+                                     → chouchou:5001        (/chouchou/)
+                                     → more services...
 ```
 
 Caddy handles TLS termination and path routing. Each app runs in its own container, blissfully unaware of the subpath.
 
+## Currently hosting
+
+| Service | Path | Repo |
+|---------|------|------|
+| VitaminChecker | `/vitaminchecker/` | [BuildWithPaul/VitaminChecker](https://github.com/BuildWithPaul/VitaminChecker) |
+| ChouChouAlerte | `/chouchou/` | [BuildWithPaul/ChouChouAlerte](https://github.com/BuildWithPaul/ChouChouAlerte) |
+
 ## Quick Start
 
 ```bash
-git clone https://github.com/BuildWithPaul/caddy-docker.git
-cd caddy-docker
+# 1. Clone all repos side by side
+git clone https://github.com/BuildWithPaul/caddy-docker.git ~/caddy-docker
+git clone https://github.com/BuildWithPaul/VitaminChecker.git ~/VitaminChecker
+git clone https://github.com/BuildWithPaul/ChouChouAlerte.git ~/ChouChouAlerte
 
-# 1. Edit Caddyfile — set your domain and services
-# 2. Edit docker-compose.yml — add your app services
+# 2. Configure ChouChouAlerte environment
+cp ~/ChouChouAlerte/.env.example ~/ChouChouAlerte/.env
+# Edit .env with your SNCF_API_TOKEN, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+
 # 3. Deploy
-docker compose up -d
+cd ~/caddy-docker
+docker compose up -d --build
 ```
+
+Your services are live at:
+- `https://paul-sandbox.duckdns.org/vitaminchecker/`
+- `https://paul-sandbox.duckdns.org/chouchou/`
 
 ## Project Structure
 
 ```
 caddy-docker/
 ├── Caddyfile              # Caddy config — domain, subpaths, reverse proxy rules
-├── docker-compose.yml     # Production compose — Caddy + app containers
+├── docker-compose.yml     # Production compose — Caddy + all app containers
 ├── .env.example           # Environment variable template
 └── README.md
+```
+
+Expected repo layout on the server:
+```
+~/
+├── caddy-docker/          # This repo (Caddy + compose)
+├── VitaminChecker/        # Flask app
+└── ChouChouAlerte/         # Flask app
 ```
 
 ## Configuration
@@ -54,7 +78,6 @@ your-domain.duckdns.org {
     handle_path /myapp/* {
         reverse_proxy myapp:5000
     }
-
     redir /myapp /myapp/ permanent
 }
 ```
@@ -67,52 +90,22 @@ Key directives:
 | `reverse_proxy myapp:5000` | Forwards request to the `myapp` service on port 5000 |
 | `redir /myapp /myapp/` | Redirects bare path to path with trailing slash |
 
-### Adding services
+### Adding a new service
 
-Add a `handle_path` block per service in the Caddyfile, then add the service in `docker-compose.yml`:
+1. Add a `handle_path` block in `Caddyfile`
+2. Add the service in `docker-compose.yml`
+3. Rebuild: `docker compose up -d --build`
 
-```yaml
-services:
-  myapp:
-    build: ../myapp
-    container_name: myapp
-    restart: unless-stopped
-    environment:
-      - APPLICATION_ROOT=/myapp    # Flask-specific, adjust for your framework
-    volumes:
-      - ../myapp/uploads:/app/uploads
+### ChouChouAlerte specifics
 
-  caddy:
-    image: caddy:2
-    container_name: caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - myapp
-
-volumes:
-  caddy_data:
-  caddy_config:
-```
-
-### Environment variables
-
-Copy `.env.example` to `.env` and edit:
+ChouChouAlerte requires environment variables (`SNCF_API_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`). Create a `.env` file in the ChouChouAlerte repo root:
 
 ```bash
-cp .env.example .env
+cp ../ChouChouAlerte/.env.example ../ChouChouAlerte/.env
+# Edit with your tokens
 ```
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DOMAIN` | `paul-sandbox.duckdns.org` | Your domain name |
-| `APP_PATH` | `/vitaminchecker` | Subpath prefix |
+The compose file loads `../ChouChouAlerte/.env` via `env_file`.
 
 ## Prerequisites
 
@@ -144,27 +137,34 @@ sudo usermod -aG docker $USER
 
 ```bash
 git clone https://github.com/BuildWithPaul/caddy-docker.git ~/caddy-docker
+git clone https://github.com/BuildWithPaul/VitaminChecker.git ~/VitaminChecker
+git clone https://github.com/BuildWithPaul/ChouChouAlerte.git ~/ChouChouAlerte
+
+# Configure ChouChouAlerte
+cp ~/ChouChouAlerte/.env.example ~/ChouChouAlerte/.env
+# Edit ~/ChouChouAlerte/.env with your tokens
+
 cd ~/caddy-docker
-
-# Edit Caddyfile with your domain and services
-# Edit docker-compose.yml with your app services
-
-docker compose up -d
+docker compose up -d --build
 ```
 
 ### Update running services
 
 ```bash
 cd ~/caddy-docker && git pull
-docker compose up -d --build
+cd ~/VitaminChecker && git pull
+cd ~/ChouChouAlerte && git pull
+
+cd ~/caddy-docker && docker compose up -d --build
 ```
 
 ### Useful commands
 
 ```bash
 # View logs
-docker compose logs -f caddy          # Caddy logs
-docker compose logs -f myapp          # App logs
+docker compose logs -f caddy              # Caddy logs
+docker compose logs -f vitaminchecker     # VitaminChecker logs
+docker compose logs -f chouchou           # ChouChouAlerte logs
 
 # Restart everything
 docker compose restart
@@ -174,6 +174,9 @@ docker compose down
 
 # Check certificate status
 docker exec caddy caddy list-modules | grep tls
+
+# Reload Caddyfile without downtime
+docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 ```
 
 ## Certificate Auto-Renewal
@@ -201,13 +204,15 @@ Remove the `handle_path` and `redir` blocks. Remove `APPLICATION_ROOT` from the 
 | Problem | Solution |
 |---------|----------|
 | Certificate fails | DNS not pointing to VPS yet — wait for propagation. Check port 80 is open. |
-| 502 Bad Gateway | App container not running — check `docker compose logs myapp` |
+| 502 Bad Gateway | App container not running — check `docker compose logs <service>` |
 | Static assets 404 | `APPLICATION_ROOT` must match the Caddyfile subpath. For Flask, set both. |
 | Redirect loop | Ensure `handle_path` strips the prefix, and `APPLICATION_ROOT` adds it back. |
+| Container name conflict | `docker rm -f <name>` then `docker compose up -d --build` |
 
 ## Used by
 
 - [VitaminChecker](https://github.com/BuildWithPaul/VitaminChecker) — Flask app at `/vitaminchecker`
+- [ChouChouAlerte](https://github.com/BuildWithPaul/ChouChouAlerte) — Flask app at `/chouchou`
 
 ## License
 

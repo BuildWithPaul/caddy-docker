@@ -1,8 +1,5 @@
 services:
-  # ── App services ──────────────────────────────────────────────
-  # Add your Docker services below. Each service should match
-  # a handle_path block in the Caddyfile.
-
+  # ── VitaminChecker ──────────────────────────────────────────
   vitaminchecker:
     build:
       context: ../VitaminChecker
@@ -15,16 +12,17 @@ services:
     volumes:
       - ../VitaminChecker/uploads:/app/uploads
 
-  # another-app:
-  #   build:
-  #     context: ../another-app
-  #     dockerfile: Dockerfile
-  #   container_name: another-app
-  #   restart: unless-stopped
-  #   environment:
-  #     - NODE_ENV=production
-  #   volumes:
-  #     - ../another-app/data:/app/data
+  # ── ChouChouAlerte ──────────────────────────────────────────
+  chouchou:
+    build:
+      context: ../ChouChouAlerte
+      dockerfile: Dockerfile
+    container_name: chouchou
+    restart: unless-stopped
+    env_file:
+      - ../ChouChouAlerte/.env
+    volumes:
+      - chouchou-data:/app/data
 
   # ── Caddy reverse proxy ──────────────────────────────────────
   caddy:
@@ -40,7 +38,9 @@ services:
       - caddy_config:/config
     depends_on:
       - vitaminchecker
+      - chouchou
 
 volumes:
   caddy_data:
   caddy_config:
+  chouchou-data:
