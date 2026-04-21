@@ -1,0 +1,46 @@
+services:
+  # ── App services ──────────────────────────────────────────────
+  # Add your Docker services below. Each service should match
+  # a handle_path block in the Caddyfile.
+
+  vitaminchecker:
+    build:
+      context: ../VitaminChecker
+      dockerfile: Dockerfile
+    container_name: vitaminchecker
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - APPLICATION_ROOT=/vitaminchecker
+    volumes:
+      - ../VitaminChecker/uploads:/app/uploads
+
+  # another-app:
+  #   build:
+  #     context: ../another-app
+  #     dockerfile: Dockerfile
+  #   container_name: another-app
+  #   restart: unless-stopped
+  #   environment:
+  #     - NODE_ENV=production
+  #   volumes:
+  #     - ../another-app/data:/app/data
+
+  # ── Caddy reverse proxy ──────────────────────────────────────
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - vitaminchecker
+
+volumes:
+  caddy_data:
+  caddy_config:

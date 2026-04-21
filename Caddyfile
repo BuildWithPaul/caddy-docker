@@ -1,0 +1,23 @@
+# Caddyfile — reverse proxy config
+# Replace paul-sandbox.duckdns.org with your domain
+# Add handle_path blocks for each service
+
+paul-sandbox.duckdns.org {
+	# Example: VitaminChecker at /vitaminchecker/
+	# handle_path strips the prefix before forwarding to the app
+	handle_path /vitaminchecker/* {
+		reverse_proxy vitaminchecker:5000
+	}
+
+	# Redirect /vitaminchecker (no trailing slash) to /vitaminchecker/
+	redir /vitaminchecker /vitaminchecker/ permanent
+
+	# Optional: redirect root to your main app
+	redir / /vitaminchecker/ permanent
+
+	# Add more services here:
+	# handle_path /another-app/* {
+	# 	reverse_proxy another-app:3000
+	# }
+	# redir /another-app /another-app/ permanent
+}
