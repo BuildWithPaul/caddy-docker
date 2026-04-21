@@ -1,8 +1,17 @@
 # Caddyfile — reverse proxy config
 # Replace paul-sandbox.duckdns.org with your domain
 # Add handle_path blocks for each service
+#
+# Set ENABLE_ACCESS_LOGS=true in .env to see request logs.
+# Default: only errors are logged (ERROR level).
 
 paul-sandbox.duckdns.org {
+	log {
+		output stdout
+		format console
+		level {$ENABLE_ACCESS_LOGS:ERROR}
+	}
+
 	# ── VitaminChecker ──────────────────────────────────────────
 	handle_path /vitaminchecker/* {
 		reverse_proxy vitaminchecker:5000

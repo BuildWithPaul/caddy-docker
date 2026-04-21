@@ -32,6 +32,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      - ENABLE_ACCESS_LOGS=${ENABLE_ACCESS_LOGS:-ERROR}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
