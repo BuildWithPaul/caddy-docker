@@ -15,7 +15,7 @@ paul-sandbox.duckdns.org {
 	# ── VitaminChecker ──────────────────────────────────────────
 	handle_path /vitaminchecker/* {
 		reverse_proxy vitaminchecker:5000 {
-			header_up X-Script-Name /vitaminchecker
+			header_up X-Forwarded-Prefix /vitaminchecker
 		}
 	}
 	redir /vitaminchecker /vitaminchecker/ permanent
@@ -23,7 +23,7 @@ paul-sandbox.duckdns.org {
 	# ── ChouChouAlerte (lowercase path) ─────────────────────────
 	handle_path /chouchoualerte/* {
 		reverse_proxy chouchoualerte:5001 {
-			header_up X-Script-Name /chouchoualerte
+			header_up X-Forwarded-Prefix /chouchoualerte
 		}
 	}
 	redir /chouchoualerte /chouchoualerte/ permanent
@@ -38,7 +38,7 @@ paul-sandbox.duckdns.org {
 	# Add more services here:
 	# handle_path /another-app/* {
 	# 	reverse_proxy another-app:3000 {
-	#       header_up X-Script-Name /another-app
+	#       header_up X-Forwarded-Prefix /another-app
 	#   }
 	# }
 	# redir /another-app /another-app/ permanent
