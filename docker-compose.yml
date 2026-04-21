@@ -21,6 +21,8 @@ services:
     restart: unless-stopped
     env_file:
       - ../ChouChouAlerte/.env
+    environment:
+      - APPLICATION_ROOT=/chouchoualerte
     volumes:
       - chouchoualerte-data:/app/data
 
