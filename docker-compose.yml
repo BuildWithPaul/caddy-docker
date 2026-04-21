@@ -13,16 +13,16 @@ services:
       - ../VitaminChecker/uploads:/app/uploads
 
   # ── ChouChouAlerte ──────────────────────────────────────────
-  chouchou:
+  chouchoualerte:
     build:
       context: ../ChouChouAlerte
       dockerfile: Dockerfile
-    container_name: chouchou
+    container_name: chouchoualerte
     restart: unless-stopped
     env_file:
       - ../ChouChouAlerte/.env
     volumes:
-      - chouchou-data:/app/data
+      - chouchoualerte-data:/app/data
 
   # ── Caddy reverse proxy ──────────────────────────────────────
   caddy:
@@ -38,9 +38,9 @@ services:
       - caddy_config:/config
     depends_on:
       - vitaminchecker
-      - chouchou
+      - chouchoualerte
 
 volumes:
   caddy_data:
   caddy_config:
-  chouchou-data:
+  chouchoualerte-data:

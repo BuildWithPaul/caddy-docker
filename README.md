@@ -14,8 +14,8 @@ Running Docker containers is easy. Exposing them securely with HTTPS is not. Thi
 ## Architecture
 
 ```
-Browser → Caddy (80/443, auto-HTTPS) → vitaminchecker:5000  (/vitaminchecker/)
-                                     → chouchou:5001        (/chouchou/)
+Browser → Caddy (80/443, auto-HTTPS) → vitaminchecker:5000      (/vitaminchecker/)
+                                     → chouchoualerte:5001        (/chouchoualerte/)
                                      → more services...
 ```
 
@@ -26,7 +26,7 @@ Caddy handles TLS termination and path routing. Each app runs in its own contain
 | Service | Path | Repo |
 |---------|------|------|
 | VitaminChecker | `/vitaminchecker/` | [BuildWithPaul/VitaminChecker](https://github.com/BuildWithPaul/VitaminChecker) |
-| ChouChouAlerte | `/chouchou/` | [BuildWithPaul/ChouChouAlerte](https://github.com/BuildWithPaul/ChouChouAlerte) |
+| ChouChouAlerte | `/chouchoualerte/` | [BuildWithPaul/ChouChouAlerte](https://github.com/BuildWithPaul/ChouChouAlerte) |
 
 ## Quick Start
 
@@ -47,7 +47,7 @@ docker compose up -d --build
 
 Your services are live at:
 - `https://paul-sandbox.duckdns.org/vitaminchecker/`
-- `https://paul-sandbox.duckdns.org/chouchou/`
+- `https://paul-sandbox.duckdns.org/chouchoualerte/`
 
 ## Project Structure
 
@@ -164,7 +164,7 @@ cd ~/caddy-docker && docker compose up -d --build
 # View logs
 docker compose logs -f caddy              # Caddy logs
 docker compose logs -f vitaminchecker     # VitaminChecker logs
-docker compose logs -f chouchou           # ChouChouAlerte logs
+docker compose logs -f chouchoualerte     # ChouChouAlerte logs
 
 # Restart everything
 docker compose restart
@@ -212,7 +212,7 @@ Remove the `handle_path` and `redir` blocks. Remove `APPLICATION_ROOT` from the 
 ## Used by
 
 - [VitaminChecker](https://github.com/BuildWithPaul/VitaminChecker) — Flask app at `/vitaminchecker`
-- [ChouChouAlerte](https://github.com/BuildWithPaul/ChouChouAlerte) — Flask app at `/chouchou`
+- [ChouChouAlerte](https://github.com/BuildWithPaul/ChouChouAlerte) — Flask app at `/chouchoualerte`
 
 ## License
 

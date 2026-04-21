@@ -10,10 +10,10 @@ paul-sandbox.duckdns.org {
 	redir /vitaminchecker /vitaminchecker/ permanent
 
 	# ── ChouChouAlerte ──────────────────────────────────────────
-	handle_path /chouchou/* {
-		reverse_proxy chouchou:5001
+	handle_path /chouchoualerte/* {
+		reverse_proxy chouchoualerte:5001
 	}
-	redir /chouchou /chouchou/ permanent
+	redir /chouchoualerte /chouchoualerte/ permanent
 
 	# ── Default: redirect root to VitaminChecker ────────────────
 	redir / /vitaminchecker/ permanent
