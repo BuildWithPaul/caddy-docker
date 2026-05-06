@@ -1,0 +1,133 @@
+services:
+  # ── VitaminChecker ──────────────────────────────────────────
+  vitaminchecker:
+    build:
+      context: ../VitaminChecker
+      dockerfile: Dockerfile
+    container_name: vitaminchecker
+    restart: unless-stopped
+    expose:
+      - "5000"
+    environment:
+      - FLASK_ENV=production
+      - APPLICATION_ROOT=/vitaminchecker
+    volumes:
+      - ../VitaminChecker/uploads:/app/uploads
+
+  # ── ChouChouAlerte ──────────────────────────────────────────
+  chouchoualerte:
+    build:
+      context: ../ChouChouAlerte
+      dockerfile: Dockerfile
+    container_name: chouchoualerte
+    restart: unless-stopped
+    expose:
+      - "5001"
+    env_file:
+      - ../ChouChouAlerte/.env
+    environment:
+      - APPLICATION_ROOT=/chouchoualerte
+      - PORT=5001
+    volumes:
+      - chouchoualerte-data:/app/data
+
+  # ── Brasserie des Faux Semblables ──────────────────────────────
+  bfs:
+    build:
+      context: ../bfs_website
+      dockerfile: Dockerfile
+    container_name: bfs_website
+    restart: unless-stopped
+    expose:
+      - "5002"
+    environment:
+      - PORT=5002
+
+  # ── Open Food Facts API ────────────────────────────────────
+  off-api:
+    build:
+      context: ../openfoodfacts-docker/api
+      dockerfile: Dockerfile
+    container_name: off-api
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-off}:${POSTGRES_PASSWORD:-off}@off-postgres:5432/${POSTGRES_DB:-off}
+      - OFF_PUBLIC_URL=https://world.openfoodfacts.org
+    depends_on:
+      off-postgres:
+        condition: service_healthy
+    networks:
+      - off-net
+      - default
+
+  # ── Open Food Facts Import Worker (runs once, then exits) ──
+  off-import:
+    build:
+      context: ../openfoodfacts-docker/api
+      dockerfile: Dockerfile
+    container_name: off-import
+    restart: "no"
+    entrypoint: ["python", "-m", "import_off"]
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-off}:${POSTGRES_PASSWORD:-off}@off-postgres:5432/${POSTGRES_DB:-off}
+      - IMPORT_DATASET=${IMPORT_DATASET:-french}
+    depends_on:
+      off-postgres:
+        condition: service_healthy
+    volumes:
+      - off_import_cache:/tmp/off_data
+    networks:
+      - off-net
+
+  # ── OFF PostgreSQL ─────────────────────────────────────────
+  off-postgres:
+    image: postgres:16-alpine
+    container_name: off-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-off}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-off}
+      - POSTGRES_DB=${POSTGRES_DB:-off}
+    volumes:
+      - off_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-off}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - off-net
+
+  # ── Caddy reverse proxy ──────────────────────────────────────
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      - ENABLE_ACCESS_LOGS=${ENABLE_ACCESS_LOGS:-ERROR}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - vitaminchecker
+      - chouchoualerte
+      - bfs
+      - off-api
+
+volumes:
+  caddy_data:
+  caddy_config:
+  chouchoualerte-data:
+  off_pg_data:
+  off_import_cache:
+
+networks:
+  off-net:

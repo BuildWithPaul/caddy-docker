@@ -1,0 +1,69 @@
+# Caddyfile — reverse proxy config
+# Replace paul-sandbox.duckdns.org with your domain
+# Add handle_path blocks for each service
+#
+# Set ENABLE_ACCESS_LOGS=true in .env to see request logs.
+# Default: only errors are logged (ERROR level).
+
+{
+	admin off
+}
+
+paul-sandbox.duckdns.org {
+	log {
+		output stdout
+		format console
+		level INFO
+	}
+
+	# ── VitaminChecker ──────────────────────────────────────────
+	handle_path /vitaminchecker/* {
+		reverse_proxy vitaminchecker:5000 {
+			header_up X-Forwarded-Prefix /vitaminchecker
+		}
+	}
+	redir /vitaminchecker /vitaminchecker/ permanent
+
+	# ── ChouChouAlerte (lowercase path) ─────────────────────────
+	handle_path /chouchoualerte/* {
+		reverse_proxy chouchoualerte:5001 {
+			header_up X-Forwarded-Prefix /chouchoualerte
+		}
+	}
+	redir /chouchoualerte /chouchoualerte/ permanent
+
+	# ── ChouChouAlerte (mixed-case redirect) ─────────────────────
+	redir /ChouChouAlerte /chouchoualerte/ permanent
+	redir /ChouChouAlerte/* /chouchoualerte/{path.1} permanent
+
+	# ── Brasserie des Faux Semblables ─────────────────────────────
+	handle_path /bfs/* {
+		reverse_proxy bfs:5002
+	}
+	redir /bfs /bfs/ permanent
+
+	# ── Open Food Facts API ─────────────────────────────────────
+	handle_path /off/api/v2/product/* {
+		rewrite * /api/v2/product/{path.1}
+		reverse_proxy off-api:8000
+	}
+	handle_path /off/api/v3/product/* {
+		rewrite * /api/v3/product/{path.1}
+		reverse_proxy off-api:8000
+	}
+	handle_path /off/cgi/search.pl {
+		rewrite * /cgi/search.pl{query}
+		reverse_proxy off-api:8000
+	}
+	handle_path /off/api/v2/search {
+		rewrite * /api/v2/search{query}
+		reverse_proxy off-api:8000
+	}
+	handle_path /off/health {
+		rewrite * /health
+		reverse_proxy off-api:8000
+	}
+
+	# ── Default: redirect root to VitaminChecker ────────────────
+	redir / /vitaminchecker/ permanent
+}
